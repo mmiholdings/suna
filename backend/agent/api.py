@@ -39,6 +39,7 @@ MODEL_NAME_ALIASES = {
     "gpt-4-turbo": "openai/gpt-4-turbo",
     "gpt-4": "openai/gpt-4",
     "gemini-flash-2.5": "openrouter/google/gemini-2.5-flash-preview",
+    "gemini-flash-2.5:thinking": "openrouter/google/gemini-2.5-flash-preview",
     "grok-3": "xai/grok-3-fast-latest",
     "deepseek": "openrouter/deepseek/deepseek-chat",
     "grok-3-mini": "xai/grok-3-mini-fast-beta",
