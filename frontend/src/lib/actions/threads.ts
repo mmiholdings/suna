@@ -16,7 +16,9 @@ export const generateThreadName = async (message: string): Promise<string> => {
       return defaultName;
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const apiBase = process.env.OPENAI_API_BASE || 'https://api.openai.com/v1';
+
+    const response = await fetch( apiBase + '/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

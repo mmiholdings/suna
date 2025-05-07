@@ -35,22 +35,22 @@ async def lifespan(app: FastAPI):
     # Startup
     global thread_manager
     logger.info(f"Starting up FastAPI application with instance ID: {instance_id} in {config.ENV_MODE.value} mode")
-    
+
     try:
         # Initialize database
         await db.initialize()
         thread_manager = ThreadManager()
-        
+
         # Initialize the agent API with shared resources
         agent_api.initialize(
             thread_manager,
             db,
             instance_id
         )
-        
+
         # Initialize the sandbox API with shared resources
         sandbox_api.initialize(db)
-        
+
         # Initialize Redis connection
         from services import redis
         try:
@@ -59,16 +59,16 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Failed to initialize Redis connection: {e}")
             # Continue without Redis - the application will handle Redis failures gracefully
-        
+
         # Start background tasks
         asyncio.create_task(agent_api.restore_running_agent_runs())
-        
+
         yield
-        
+
         # Clean up agent resources
         logger.info("Cleaning up agent resources")
         await agent_api.cleanup()
-        
+
         # Clean up Redis connection
         try:
             logger.info("Closing Redis connection")
@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
             logger.info("Redis connection closed successfully")
         except Exception as e:
             logger.error(f"Error closing Redis connection: {e}")
-        
+
         # Clean up database connection
         logger.info("Disconnecting from database")
         await db.disconnect()
@@ -94,10 +94,10 @@ async def log_requests_middleware(request: Request, call_next):
     url = str(request.url)
     path = request.url.path
     query_params = str(request.query_params)
-    
+
     # Log the incoming request
     logger.info(f"Request started: {method} {path} from {client_ip} | Query: {query_params}")
-    
+
     try:
         response = await call_next(request)
         process_time = time.time() - start_time
@@ -114,10 +114,17 @@ allowed_origins = ["https://www.suna.so", "https://suna.so", "https://staging.su
 # Add staging-specific origins
 if config.ENV_MODE == EnvMode.STAGING:
     allowed_origins.append("http://localhost:3000")
-    
+
 # Add local-specific origins
 if config.ENV_MODE == EnvMode.LOCAL:
     allowed_origins.append("http://localhost:3000")
+
+# add allow origins from config
+if config.ALLOW_ORIGINS:
+    config_list = [origin.strip() for origin in config.ALLOW_ORIGINS.split(",") if origin.strip()]
+    logger.info(f"add allow origins from config: {config_list}")
+    allowed_origins.extend(config_list)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,20 +148,20 @@ async def health_check():
     """Health check endpoint to verify API is working."""
     logger.info("Health check endpoint called")
     return {
-        "status": "ok", 
+        "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "instance_id": instance_id
     }
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     workers = 2
-    
+
     logger.info(f"Starting server on 0.0.0.0:8000 with {workers} workers")
     uvicorn.run(
-        "api:app", 
-        host="0.0.0.0", 
+        "api:app",
+        host="0.0.0.0",
         port=8000,
         workers=workers,
         reload=True
